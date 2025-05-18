@@ -1,4 +1,4 @@
-module github.com/MamangRust/payment-gateway-monolith-grpc/pkg
+module github.com/MamangRust/monolith-payment-gateway-pkg
 
 go 1.23.4
 
