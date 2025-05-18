@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	db "github.com/MamangRust/payment-gateway-monolith-grpc/pkg/database/schema"
-	"github.com/MamangRust/payment-gateway-monolith-grpc/pkg/date"
-	"github.com/MamangRust/payment-gateway-monolith-grpc/pkg/logger"
-	"github.com/MamangRust/payment-gateway-monolith-grpc/pkg/randomvcc"
+	db "github.com/MamangRust/monolith-payment-gateway-pkg/database/schema"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/date"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/randomvcc"
 	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
 )

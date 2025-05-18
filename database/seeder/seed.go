@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	db "github.com/MamangRust/payment-gateway-monolith-grpc/pkg/database/schema"
-	"github.com/MamangRust/payment-gateway-monolith-grpc/pkg/hash"
-	"github.com/MamangRust/payment-gateway-monolith-grpc/pkg/logger"
+	db "github.com/MamangRust/monolith-payment-gateway-pkg/database/schema"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/hash"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 )
 
 type Deps struct {

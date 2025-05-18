@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	apikey "github.com/MamangRust/payment-gateway-monolith-grpc/pkg/api-key"
-	db "github.com/MamangRust/payment-gateway-monolith-grpc/pkg/database/schema"
-	"github.com/MamangRust/payment-gateway-monolith-grpc/pkg/logger"
+	apikey "github.com/MamangRust/monolith-payment-gateway-pkg/api-key"
+	db "github.com/MamangRust/monolith-payment-gateway-pkg/database/schema"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
 )

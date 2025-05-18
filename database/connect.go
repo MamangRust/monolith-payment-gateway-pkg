@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/MamangRust/payment-gateway-monolith-grpc/pkg/logger"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"

@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"time"
 
-	db "github.com/MamangRust/payment-gateway-monolith-grpc/pkg/database/schema"
-	"github.com/MamangRust/payment-gateway-monolith-grpc/pkg/logger"
+	db "github.com/MamangRust/monolith-payment-gateway-pkg/database/schema"
+	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 	"go.uber.org/zap"
 )
 
