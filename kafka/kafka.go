@@ -34,6 +34,10 @@ func NewKafka(logger logger.LoggerInterface, brokers []string) *Kafka {
 	}
 }
 
+func (k *Kafka) GetBrokers() []string {
+	return k.brokers
+}
+
 func (k *Kafka) SendMessage(topic string, key string, value []byte) error {
 	msg := &sarama.ProducerMessage{
 		Topic: topic,
