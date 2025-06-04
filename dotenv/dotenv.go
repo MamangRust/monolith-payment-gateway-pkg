@@ -14,21 +14,28 @@ func Viper() error {
 	}
 
 	var configFile string
+	useConfigFile := true
+
 	switch env {
 	case "docker":
 		configFile = "/app/docker.env"
 	case "production":
 		configFile = "/app/production.env"
+	case "kubernetes":
+		useConfigFile = false
 	default:
 		configFile = ".env"
 	}
 
-	viper.SetConfigFile(configFile)
 	viper.AutomaticEnv()
 
-	err := viper.ReadInConfig()
-	if err != nil {
-		return fmt.Errorf("error reading config file %s: %w", configFile, err)
+	if useConfigFile {
+		viper.SetConfigFile(configFile)
+
+		err := viper.ReadInConfig()
+		if err != nil {
+			return fmt.Errorf("error reading config file %s: %w", configFile, err)
+		}
 	}
 
 	return nil
