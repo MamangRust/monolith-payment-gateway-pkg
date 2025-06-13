@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
@@ -19,32 +19,35 @@ func InitTracerProvider(service string, ctx context.Context) (func(context.Conte
 		otlptracegrpc.WithInsecure(),
 		otlptracegrpc.WithEndpoint(viper.GetString("OTEL_ENDPOINT")),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create trace exporter: %w", err)
 	}
 
-	res, err := resource.New(
+	res, err := sdkresource.New(
 		ctx,
-		resource.WithAttributes(
+		sdkresource.WithAttributes(
 			semconv.ServiceNameKey.String(service),
 			semconv.ServiceVersionKey.String("1.0.0"),
+			semconv.DeploymentEnvironmentKey.String("production"),
 		),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	tracerProvider := sdktrace.NewTracerProvider(
+	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(traceExporter),
 		sdktrace.WithResource(res),
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 	)
 
-	otel.SetTracerProvider(tracerProvider)
+	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
 
-	return tracerProvider.Shutdown, nil
+	return tp.Shutdown, nil
 }
