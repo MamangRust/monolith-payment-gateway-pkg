@@ -116,6 +116,25 @@ SELECT * FROM users WHERE verification_code = $1;
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL;
 
+
+-- name: GetUserByEmailAndVerified :one
+-- Purpose: Retrieve a verified user by their email.
+-- Parameters:
+--   $1: email - The email of the user to fetch.
+-- Returns:
+--   - User record where email matches, user is verified, and not deleted.
+-- Business Logic:
+--   - Must match email exactly.
+--   - `is_verified` must be true.
+--   - `deleted_at` must be NULL (not soft-deleted).
+SELECT *
+FROM users
+WHERE email = $1
+  AND is_verified = true
+  AND deleted_at IS NULL;
+
+
+
 -- SearchUsersByEmail: Search users by email with case-insensitive matching
 -- name: SearchUsersByEmail :many
 -- Purpose: Allows searching for users whose email matches a given search term (case-insensitive).
