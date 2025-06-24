@@ -56,6 +56,8 @@ func (k *Kafka) SendMessage(topic string, key string, value []byte) error {
 
 func (k *Kafka) StartConsumers(topics []string, groupID string, handler sarama.ConsumerGroupHandler) error {
 	config := sarama.NewConfig()
+	config.Consumer.Return.Errors = true
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
 
 	consumerGroup, err := sarama.NewConsumerGroup(k.brokers, groupID, config)
 	if err != nil {
