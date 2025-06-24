@@ -26,17 +26,32 @@ var once sync.Once
 var instance LoggerInterface
 
 func NewLogger(service string) (LoggerInterface, error) {
-	var err error
+	var setupErr error
+
 	once.Do(func() {
-		logDir := "/var/log/app"
-		if err = os.MkdirAll(logDir, 0755); err != nil {
+		env := os.Getenv("APP_ENV")
+
+		if env == "" {
+			env = "development"
+		}
+
+		logDir := "./logs"
+
+		if env == "docker" || env == "production" {
+			logDir = "/var/log/app"
+		}
+
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			setupErr = fmt.Errorf("failed to create log directory: %w", err)
 			return
 		}
 
 		logPath := filepath.Join(logDir, fmt.Sprintf("%s.log", service))
 
 		logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
 		if err != nil {
+			setupErr = fmt.Errorf("failed to open log file: %w", err)
 			return
 		}
 
@@ -71,7 +86,8 @@ func NewLogger(service string) (LoggerInterface, error) {
 		logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 		instance = &Logger{Log: logger}
 	})
-	return instance, err
+
+	return instance, setupErr
 }
 
 func (l *Logger) Info(message string, fields ...zap.Field) {
