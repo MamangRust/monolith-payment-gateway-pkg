@@ -26,19 +26,25 @@ func NewWithdrawSeeder(db *db.Queries, ctx context.Context, logger logger.Logger
 }
 
 func (r *withdrawSeeder) Seed() error {
-	cards, err := r.db.GetCards(r.ctx, db.GetCardsParams{
-		Column1: "",
-		Limit:   10,
-		Offset:  0,
-	})
-	if err != nil {
-		r.logger.Error("failed to get card list", zap.Error(err))
-		return fmt.Errorf("failed to get card list: %w", err)
+	total := 10
+	active := 5
+	trashed := total - active
+
+	var cards []db.Card
+	for i := 1; i <= total; i++ {
+		card, err := r.db.GetCardByUserID(r.ctx, int32(i))
+		if err != nil {
+			r.logger.Debug("failed to get card for user", zap.Int("userID", i), zap.Error(err))
+			continue
+		}
+		if card != nil {
+			cards = append(cards, *card)
+		}
 	}
 
-	if len(cards) == 0 {
-		r.logger.Error("no cards available for withdraw seeding")
-		return fmt.Errorf("no cards available for withdraw seeding")
+	if len(cards) < total {
+		r.logger.Error("not enough cards for withdraw seeding", zap.Int("required", total), zap.Int("available", len(cards)))
+		return fmt.Errorf("not enough cards: required %d, got %d", total, len(cards))
 	}
 
 	statusOptions := []string{"pending", "success", "failed"}
@@ -49,46 +55,47 @@ func (r *withdrawSeeder) Seed() error {
 		months[i] = time.Date(currentYear, time.Month(i+1), 1, 0, 0, 0, 0, time.UTC)
 	}
 
-	for i := 0; i < 40; i++ {
-		selectedCard := cards[rand.Intn(len(cards))]
-
+	for i := 0; i < total; i++ {
+		card := cards[i]
 		status := statusOptions[rand.Intn(len(statusOptions))]
 
 		monthIndex := i % 12
 		withdrawTime := months[monthIndex].Add(time.Duration(rand.Intn(28)) * 24 * time.Hour)
 
-		request := db.CreateWithdrawParams{
-			CardNumber:     selectedCard.CardNumber,
+		req := db.CreateWithdrawParams{
+			CardNumber:     card.CardNumber,
 			WithdrawAmount: int32(rand.Intn(1000000) + 50000),
 			WithdrawTime:   withdrawTime,
 		}
 
-		withdraw, err := r.db.CreateWithdraw(r.ctx, request)
+		withdraw, err := r.db.CreateWithdraw(r.ctx, req)
 		if err != nil {
-			r.logger.Error("failed to seed withdraw", zap.Int("withdraw", i+1), zap.Error(err))
-			return fmt.Errorf("failed to seed withdraw %d: %w", i+1, err)
+			r.logger.Error("failed to seed withdraw", zap.Int("index", i), zap.Error(err))
+			return fmt.Errorf("failed to create withdraw %d: %w", i, err)
 		}
 
 		_, err = r.db.UpdateWithdrawStatus(r.ctx, db.UpdateWithdrawStatusParams{
 			WithdrawID: withdraw.WithdrawID,
 			Status:     status,
 		})
-
 		if err != nil {
-			r.logger.Error("failed to update withdraw status", zap.Int("withdrawID", int(withdraw.WithdrawID)), zap.String("status", status), zap.Error(err))
-			return fmt.Errorf("failed to update withdraw status for withdraw ID %d: %w", withdraw.WithdrawID, err)
+			r.logger.Error("failed to update withdraw status", zap.Int("withdraw.id", int(withdraw.WithdrawID)), zap.Error(err))
+			return fmt.Errorf("failed to update status: %w", err)
 		}
 
-		if i < 20 {
+		if i >= active {
 			_, err = r.db.TrashWithdraw(r.ctx, withdraw.WithdrawID)
 			if err != nil {
-				r.logger.Error("failed to trash withdraw", zap.Int("withdraw", i+1), zap.Error(err))
-				return fmt.Errorf("failed to trash withdraw %d: %w", i+1, err)
+				r.logger.Error("failed to trash withdraw", zap.Int("withdraw.id", int(withdraw.WithdrawID)), zap.Error(err))
+				return fmt.Errorf("failed to trash withdraw %d: %w", i, err)
 			}
 		}
 	}
 
-	r.logger.Info("withdraw seeded successfully")
+	r.logger.Info("withdraw seeding completed",
+		zap.Int("total", total),
+		zap.Int("active", active),
+		zap.Int("trashed", trashed))
 
 	return nil
 }

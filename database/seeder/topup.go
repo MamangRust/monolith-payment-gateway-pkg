@@ -26,23 +26,29 @@ func NewTopupSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInt
 }
 
 func (r *topupSeeder) Seed() error {
-	totalTopups := 40
-	activeTopups := 20
-	trashedTopups := 20
+	totalTopups := 10
+	activeTopups := 5
+	trashedTopups := 5
 
-	cards, err := r.db.GetCards(r.ctx, db.GetCardsParams{
-		Column1: "",
-		Limit:   int32(totalTopups),
-		Offset:  0,
-	})
-	if err != nil {
-		r.logger.Error("failed to get card list", zap.Error(err))
-		return fmt.Errorf("failed to get card list: %w", err)
+	var cards []db.Card
+
+	for i := 1; i <= totalTopups; i++ {
+		cardList, err := r.db.GetCardByUserID(r.ctx, int32(i))
+		if err != nil {
+			r.logger.Error("failed to get card for user", zap.Int("userID", i), zap.Error(err))
+			return fmt.Errorf("failed to get card for user %d: %w", i, err)
+		}
+
+		if cardList == nil {
+			r.logger.Error("no card found for user", zap.Int("userID", i))
+			continue
+		}
+		cards = append(cards, *cardList)
 	}
 
-	if len(cards) == 0 {
-		r.logger.Error("no cards available for topup seeding")
-		return fmt.Errorf("no cards available for topup seeding")
+	if len(cards) < totalTopups {
+		r.logger.Error("not enough cards found to seed topups", zap.Int("found", len(cards)))
+		return fmt.Errorf("not enough cards to seed topups")
 	}
 
 	topupMethods := []string{"Bank Alpha", "Bank Beta", "Bank Gamma"}
@@ -55,13 +61,8 @@ func (r *topupSeeder) Seed() error {
 	}
 
 	for i := 0; i < totalTopups; i++ {
-		card := cards[i%len(cards)]
+		card := cards[i]
 		cardNumber := card.CardNumber
-
-		if len(cardNumber) < 5 {
-			r.logger.Error("card number is too short", zap.String("card", cardNumber))
-			return fmt.Errorf("card number %s is too short", cardNumber)
-		}
 
 		monthIndex := i % 12
 		topupTime := months[monthIndex].Add(time.Duration(rand.Intn(28)) * 24 * time.Hour)
@@ -75,7 +76,7 @@ func (r *topupSeeder) Seed() error {
 
 		topup, err := r.db.CreateTopup(r.ctx, request)
 		if err != nil {
-			r.logger.Error("failed to seed topup for card", zap.String("card", cardNumber), zap.Error(err))
+			r.logger.Error("failed to seed topup", zap.String("card", cardNumber), zap.Error(err))
 			return fmt.Errorf("failed to seed topup for card %s: %w", cardNumber, err)
 		}
 
@@ -85,8 +86,8 @@ func (r *topupSeeder) Seed() error {
 			Status:  status,
 		})
 		if err != nil {
-			r.logger.Error("failed to update topup status", zap.Int("topupID", int(topup.TopupID)), zap.String("status", status), zap.Error(err))
-			return fmt.Errorf("failed to update topup status for topup ID %d: %w", topup.TopupID, err)
+			r.logger.Error("failed to update topup status", zap.Int("topupID", int(topup.TopupID)), zap.Error(err))
+			return fmt.Errorf("failed to update status for topup %d: %w", topup.TopupID, err)
 		}
 
 		if i >= activeTopups {
@@ -98,7 +99,6 @@ func (r *topupSeeder) Seed() error {
 		}
 	}
 
-	r.logger.Debug("topup seeded successfully", zap.Int("totalTopups", totalTopups), zap.Int("activeTopups", activeTopups), zap.Int("trashedTopups", trashedTopups))
-
+	r.logger.Info("topup seeded successfully", zap.Int("totalTopups", totalTopups), zap.Int("activeTopups", activeTopups), zap.Int("trashedTopups", trashedTopups))
 	return nil
 }

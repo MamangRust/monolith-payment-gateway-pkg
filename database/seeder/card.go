@@ -9,7 +9,6 @@ import (
 	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/randomvcc"
 	"go.uber.org/zap"
-	"golang.org/x/exp/rand"
 )
 
 type cardSeeder struct {
@@ -30,54 +29,45 @@ func (r *cardSeeder) Seed() error {
 	cardTypes := []string{"credit", "debit"}
 	cardProviders := []string{"mandiri", "bni", "bri"}
 
-	generatedCards := make(map[string]struct{})
+	totalCards := 10
+	activeCards := 5
+	trashedCards := 5
 
-	totalCards := 40
-	activeCards := 20
-	trashedCards := 20
-
-	for i := 1; i <= totalCards; i++ {
-		var random string
-		var err error
-
-		for {
-			random, err = randomvcc.RandomCardNumber()
-			if err != nil {
-				r.logger.Error("failed to generate card number for card", zap.Int("card", i), zap.Error(err))
-				return fmt.Errorf("failed to generate card number for card %d: %w", i, err)
-			}
-
-			if _, exists := generatedCards[random]; !exists {
-				generatedCards[random] = struct{}{}
-				break
-			}
+	cardNumbers := make([]string, totalCards)
+	for i := 0; i < totalCards; i++ {
+		cardNumber, err := randomvcc.RandomCardNumber()
+		if err != nil {
+			r.logger.Error("failed to generate card number", zap.Int("index", i), zap.Error(err))
+			return fmt.Errorf("failed to generate card number: %w", err)
 		}
+		cardNumbers[i] = cardNumber
+	}
 
+	for i := 0; i < totalCards; i++ {
 		request := db.CreateCardParams{
-			UserID:       int32(i),
-			CardNumber:   random,
+			UserID:       int32(i + 1),
+			CardNumber:   cardNumbers[i],
 			CardType:     cardTypes[i%len(cardTypes)],
 			ExpireDate:   date.GenerateExpireDate(),
-			Cvv:          fmt.Sprintf("%03d", rand.Intn(1000)),
+			Cvv:          fmt.Sprintf("%03d", i%1000),
 			CardProvider: cardProviders[i%len(cardProviders)],
 		}
 
 		card, err := r.db.CreateCard(r.ctx, request)
 		if err != nil {
-			r.logger.Error("failed to seed card", zap.Int("card", i), zap.Error(err))
-			return fmt.Errorf("failed to seed card %d: %w", i, err)
+			r.logger.Error("failed to seed card", zap.Int("card", i+1), zap.Error(err))
+			return fmt.Errorf("failed to seed card %d: %w", i+1, err)
 		}
 
-		if i > activeCards {
+		if i >= activeCards {
 			_, err = r.db.TrashCard(r.ctx, card.CardID)
 			if err != nil {
-				r.logger.Error("failed to trash card", zap.Int("card", i), zap.Error(err))
-				return fmt.Errorf("failed to trash card %d: %w", i, err)
+				r.logger.Error("failed to trash card", zap.Int("card", i+1), zap.Error(err))
+				return fmt.Errorf("failed to trash card %d: %w", i+1, err)
 			}
 		}
 	}
 
-	r.logger.Debug("card seeded successfully", zap.Int("totalCards", totalCards), zap.Int("activeCards", activeCards), zap.Int("trashedCards", trashedCards))
-
+	r.logger.Info("card seeded successfully", zap.Int("totalCards", totalCards), zap.Int("activeCards", activeCards), zap.Int("trashedCards", trashedCards))
 	return nil
 }

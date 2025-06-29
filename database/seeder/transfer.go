@@ -26,19 +26,25 @@ func NewTransferSeeder(db *db.Queries, ctx context.Context, logger logger.Logger
 }
 
 func (r *transferSeeder) Seed() error {
-	cards, err := r.db.GetCards(r.ctx, db.GetCardsParams{
-		Column1: "",
-		Limit:   10,
-		Offset:  0,
-	})
-	if err != nil {
-		r.logger.Error("failed to get card list", zap.Error(err))
-		return fmt.Errorf("failed to get card list: %w", err)
+	total := 10
+	active := 5
+	trashed := total - active
+
+	var cards []db.Card
+	for i := 1; i <= total; i++ {
+		card, err := r.db.GetCardByUserID(r.ctx, int32(i))
+		if err != nil {
+			r.logger.Debug("failed to get card for user", zap.Int("userID", i), zap.Error(err))
+			continue
+		}
+		if card != nil {
+			cards = append(cards, *card)
+		}
 	}
 
 	if len(cards) < 2 {
-		r.logger.Error("not enough cards available for transfer seeding")
-		return fmt.Errorf("not enough cards available for transfer seeding")
+		r.logger.Error("not enough cards available for transfer seeding", zap.Int("available", len(cards)))
+		return fmt.Errorf("need at least 2 cards, got %d", len(cards))
 	}
 
 	statusOptions := []string{"pending", "success", "failed"}
@@ -49,38 +55,36 @@ func (r *transferSeeder) Seed() error {
 		months[i] = time.Date(currentYear, time.Month(i+1), 1, 0, 0, 0, 0, time.UTC)
 	}
 
-	for i := 0; i < 40; i++ {
+	for i := 0; i < total; i++ {
 		fromIndex := rand.Intn(len(cards))
 		toIndex := rand.Intn(len(cards))
-
 		for fromIndex == toIndex {
 			toIndex = rand.Intn(len(cards))
 		}
 
 		transferFrom := cards[fromIndex].CardNumber
 		transferTo := cards[toIndex].CardNumber
-		transferAmount := int32(rand.Intn(1000000) + 50000)
-
+		amount := int32(rand.Intn(1000000) + 50000)
 		status := statusOptions[rand.Intn(len(statusOptions))]
 
 		monthIndex := i % 12
 		transferTime := months[monthIndex].Add(time.Duration(rand.Intn(28)) * 24 * time.Hour)
 
-		request := db.CreateTransferParams{
+		req := db.CreateTransferParams{
 			TransferFrom:   transferFrom,
 			TransferTo:     transferTo,
-			TransferAmount: transferAmount,
+			TransferAmount: amount,
 			TransferTime:   transferTime,
 			Status:         status,
 		}
 
-		transfer, err := r.db.CreateTransfer(r.ctx, request)
+		transfer, err := r.db.CreateTransfer(r.ctx, req)
 		if err != nil {
 			r.logger.Error("failed to seed transfer", zap.Int("transfer", i+1), zap.Error(err))
 			return fmt.Errorf("failed to seed transfer %d: %w", i+1, err)
 		}
 
-		if i < 20 {
+		if i >= active {
 			_, err = r.db.TrashTransfer(r.ctx, transfer.TransferID)
 			if err != nil {
 				r.logger.Error("failed to trash transfer", zap.Int("transfer", i+1), zap.Error(err))
@@ -89,7 +93,10 @@ func (r *transferSeeder) Seed() error {
 		}
 	}
 
-	r.logger.Info("transfer seeded successfully")
+	r.logger.Info("transfer seeded successfully",
+		zap.Int("total", total),
+		zap.Int("active", active),
+		zap.Int("trashed", trashed))
 
 	return nil
 }

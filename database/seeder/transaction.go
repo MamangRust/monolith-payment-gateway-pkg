@@ -26,27 +26,35 @@ func NewTransactionSeeder(db *db.Queries, ctx context.Context, logger logger.Log
 }
 
 func (r *transactionSeeder) Seed() error {
+	total := 10
+	active := 5
+	trashed := 5
+
 	paymentMethods := []string{"Bank Alpha", "Bank Beta", "Bank Gamma"}
 	statusOptions := []string{"pending", "success", "failed"}
 
-	cards, err := r.db.GetCards(r.ctx, db.GetCardsParams{
-		Column1: "",
-		Limit:   10,
-		Offset:  0,
-	})
-	if err != nil {
-		r.logger.Error("failed to get card list", zap.Error(err))
-		return fmt.Errorf("failed to get card list: %w", err)
+	var cards []db.Card
+	for i := 1; i <= total; i++ {
+		card, err := r.db.GetCardByUserID(r.ctx, int32(i))
+		if err != nil {
+			r.logger.Error("failed to get card for user", zap.Int("userID", i), zap.Error(err))
+			return fmt.Errorf("failed to get card for user %d: %w", i, err)
+		}
+		if card == nil {
+			r.logger.Error("no card found for user", zap.Int("userID", i))
+			continue
+		}
+		cards = append(cards, *card)
 	}
 
-	if len(cards) == 0 {
-		r.logger.Error("no cards available for transaction seeding")
-		return fmt.Errorf("no cards available for transaction seeding")
+	if len(cards) < total {
+		r.logger.Error("not enough cards for transaction seeding", zap.Int("required", total), zap.Int("available", len(cards)))
+		return fmt.Errorf("not enough cards for transaction seeding: required %d, got %d", total, len(cards))
 	}
 
 	merchants, err := r.db.GetMerchants(r.ctx, db.GetMerchantsParams{
 		Column1: "",
-		Limit:   10,
+		Limit:   int32(total),
 		Offset:  0,
 	})
 	if err != nil {
@@ -54,9 +62,9 @@ func (r *transactionSeeder) Seed() error {
 		return fmt.Errorf("failed to get merchant list: %w", err)
 	}
 
-	if len(merchants) == 0 {
-		r.logger.Error("no merchants available for transaction seeding")
-		return fmt.Errorf("no merchants available for transaction seeding")
+	if len(merchants) < total {
+		r.logger.Error("not enough merchants for transaction seeding", zap.Int("required", total), zap.Int("available", len(merchants)))
+		return fmt.Errorf("not enough merchants: required %d, got %d", total, len(merchants))
 	}
 
 	months := make([]time.Time, 12)
@@ -65,51 +73,47 @@ func (r *transactionSeeder) Seed() error {
 		months[i] = time.Date(currentYear, time.Month(i+1), 1, 0, 0, 0, 0, time.UTC)
 	}
 
-	for i := 0; i < 40; i++ {
-		selectedCard := cards[rand.Intn(len(cards))]
-		selectedMerchant := merchants[rand.Intn(len(merchants))]
-		selectedPaymentMethod := paymentMethods[rand.Intn(len(paymentMethods))]
-		transactionAmount := int32(rand.Intn(1000000-50000) + 50000)
-
-		status := statusOptions[rand.Intn(len(statusOptions))]
+	for i := 0; i < total; i++ {
+		card := cards[i]
+		merchant := merchants[i%len(merchants)]
+		paymentMethod := paymentMethods[i%len(paymentMethods)]
+		status := statusOptions[i%len(statusOptions)]
 
 		monthIndex := i % 12
 		transactionTime := months[monthIndex].Add(time.Duration(rand.Intn(28)) * 24 * time.Hour)
 
 		request := db.CreateTransactionParams{
-			CardNumber:      selectedCard.CardNumber,
-			Amount:          transactionAmount,
-			PaymentMethod:   selectedPaymentMethod,
-			MerchantID:      selectedMerchant.MerchantID,
+			CardNumber:      card.CardNumber,
+			Amount:          int32(rand.Intn(1000000-50000) + 50000),
+			PaymentMethod:   paymentMethod,
+			MerchantID:      merchant.MerchantID,
 			TransactionTime: transactionTime,
 		}
 
 		transaction, err := r.db.CreateTransaction(r.ctx, request)
 		if err != nil {
-			r.logger.Error("failed to seed transaction", zap.Int("transaction", i+1), zap.Error(err))
-			return fmt.Errorf("failed to seed transaction %d: %w", i+1, err)
+			r.logger.Error("failed to seed transaction", zap.Int("index", i), zap.Error(err))
+			return fmt.Errorf("failed to seed transaction %d: %w", i, err)
 		}
 
 		_, err = r.db.UpdateTransactionStatus(r.ctx, db.UpdateTransactionStatusParams{
 			TransactionID: transaction.TransactionID,
 			Status:        status,
 		})
-
 		if err != nil {
 			r.logger.Error("failed to update transaction status", zap.Int("transactionID", int(transaction.TransactionID)), zap.String("status", status), zap.Error(err))
-			return fmt.Errorf("failed to update transaction status for transaction ID %d: %w", transaction.TransactionID, err)
+			return fmt.Errorf("failed to update status for transaction ID %d: %w", transaction.TransactionID, err)
 		}
 
-		if i < 20 {
+		if i >= active {
 			_, err = r.db.TrashTransaction(r.ctx, transaction.TransactionID)
 			if err != nil {
-				r.logger.Error("failed to trash transaction", zap.Int("transaction", i+1), zap.Error(err))
-				return fmt.Errorf("failed to trash transaction %d: %w", i+1, err)
+				r.logger.Error("failed to trash transaction", zap.Int("index", i), zap.Error(err))
+				return fmt.Errorf("failed to trash transaction %d: %w", i, err)
 			}
 		}
 	}
 
-	r.logger.Info("transaction seeded successfully")
-
+	r.logger.Info("transaction seeded successfully", zap.Int("total", total), zap.Int("active", active), zap.Int("trashed", trashed))
 	return nil
 }

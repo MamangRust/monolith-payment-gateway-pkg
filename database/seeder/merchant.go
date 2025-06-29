@@ -8,7 +8,6 @@ import (
 	db "github.com/MamangRust/monolith-payment-gateway-pkg/database/schema"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 	"go.uber.org/zap"
-	"golang.org/x/exp/rand"
 )
 
 type merchantSeeder struct {
@@ -26,25 +25,23 @@ func NewMerchantSeeder(db *db.Queries, ctx context.Context, logger logger.Logger
 }
 
 func (r *merchantSeeder) Seed() error {
-	adjectives := []string{"Blue", "Green", "Red", "Yellow", "Fast", "Smart", "Global", "Local", "Happy", "Bright"}
-	nouns := []string{"Shop", "Store", "Mart", "Market", "Hub", "Center", "Place", "Corner", "Zone", "Point"}
+	adjectives := []string{"Blue", "Green", "Red", "Yellow", "Fast"}
+	nouns := []string{"Shop", "Store", "Mart", "Market", "Hub"}
 
-	statusOptions := []string{"pending", "active", "deactive"}
-
-	totalMerchants := 40
-	activeMerchants := 20
-	trashedMerchants := 20
+	totalMerchants := 10
+	activeMerchants := 5
+	trashedMerchants := 5
 
 	for i := 0; i < totalMerchants; i++ {
-		adjective := adjectives[rand.Intn(len(adjectives))]
-		noun := nouns[rand.Intn(len(nouns))]
+		adjective := adjectives[i%len(adjectives)]
+		noun := nouns[i%len(nouns)]
 		merchantName := fmt.Sprintf("%s %s", adjective, noun)
 
 		apiKey := apikey.GenerateApiKey()
 
 		req := db.CreateMerchantParams{
 			Name:   merchantName,
-			UserID: int32(rand.Intn(40) + 1),
+			UserID: int32((i % 5) + 1),
 			ApiKey: apiKey,
 		}
 
@@ -54,16 +51,20 @@ func (r *merchantSeeder) Seed() error {
 			return fmt.Errorf("failed to seed merchant %d: %w", i+1, err)
 		}
 
-		status := statusOptions[rand.Intn(len(statusOptions))]
+		var status string
+		if i < activeMerchants {
+			status = "active"
+		} else {
+			status = "deactive"
+		}
 
 		_, err = r.db.UpdateMerchantStatus(r.ctx, db.UpdateMerchantStatusParams{
 			MerchantID: merchant.MerchantID,
 			Status:     status,
 		})
-
 		if err != nil {
 			r.logger.Error("failed to update merchant status", zap.Int("merchantID", int(merchant.MerchantID)), zap.String("status", status), zap.Error(err))
-			return fmt.Errorf("failed to update merchant status for merchant ID %d: %w", merchant.MerchantID, err)
+			return fmt.Errorf("failed to update status for merchant ID %d: %w", merchant.MerchantID, err)
 		}
 
 		if i >= activeMerchants {
@@ -75,7 +76,10 @@ func (r *merchantSeeder) Seed() error {
 		}
 	}
 
-	r.logger.Debug("merchant seeded successfully", zap.Int("totalMerchants", totalMerchants), zap.Int("activeMerchants", activeMerchants), zap.Int("trashedMerchants", trashedMerchants))
+	r.logger.Info("merchant seeded successfully",
+		zap.Int("totalMerchants", totalMerchants),
+		zap.Int("activeMerchants", activeMerchants),
+		zap.Int("trashedMerchants", trashedMerchants))
 
 	return nil
 }

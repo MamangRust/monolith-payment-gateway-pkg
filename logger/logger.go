@@ -37,13 +37,15 @@ func NewLogger(service string) (LoggerInterface, error) {
 
 		logDir := "./logs"
 
-		if env == "docker" || env == "production" {
+		if env == "docker" || env == "production" || env == "kubernetes" {
 			logDir = "/var/log/app"
 		}
 
-		if err := os.MkdirAll(logDir, 0755); err != nil {
-			setupErr = fmt.Errorf("failed to create log directory: %w", err)
-			return
+		if _, err := os.Stat(logDir); os.IsNotExist(err) {
+			if err := os.MkdirAll(logDir, 0755); err != nil {
+				setupErr = fmt.Errorf("failed to create log directory: %w", err)
+				return
+			}
 		}
 
 		logPath := filepath.Join(logDir, fmt.Sprintf("%s.log", service))
@@ -86,6 +88,10 @@ func NewLogger(service string) (LoggerInterface, error) {
 		logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 		instance = &Logger{Log: logger}
 	})
+
+	if setupErr != nil {
+		return nil, setupErr
+	}
 
 	return instance, setupErr
 }
