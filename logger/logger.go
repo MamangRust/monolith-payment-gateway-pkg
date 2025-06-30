@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -30,31 +31,30 @@ func NewLogger(service string) (LoggerInterface, error) {
 
 	once.Do(func() {
 		env := os.Getenv("APP_ENV")
-
 		if env == "" {
 			env = "development"
 		}
 
 		logDir := "./logs"
-
 		if env == "docker" || env == "production" || env == "kubernetes" {
 			logDir = "/var/log/app"
 		}
 
-		if _, err := os.Stat(logDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(logDir, 0755); err != nil {
-				setupErr = fmt.Errorf("failed to create log directory: %w", err)
-				return
-			}
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			setupErr = fmt.Errorf("failed to create log directory '%s': %w", logDir, err)
+			log.Println("[WARN] Fallback to stdout only:", setupErr)
 		}
 
 		logPath := filepath.Join(logDir, fmt.Sprintf("%s.log", service))
 
-		logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-		if err != nil {
-			setupErr = fmt.Errorf("failed to open log file: %w", err)
-			return
+		var logFile *os.File
+		if setupErr == nil {
+			var err error
+			logFile, err = os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				setupErr = fmt.Errorf("failed to open log file '%s': %w", logPath, err)
+				log.Println("[WARN] Fallback to stdout only:", setupErr)
+			}
 		}
 
 		encoderConfig := zapcore.EncoderConfig{
@@ -72,26 +72,25 @@ func NewLogger(service string) (LoggerInterface, error) {
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		}
 
-		core := zapcore.NewTee(
-			zapcore.NewCore(
-				zapcore.NewJSONEncoder(encoderConfig),
-				zapcore.AddSync(logFile),
-				zapcore.DebugLevel,
-			),
+		cores := []zapcore.Core{
 			zapcore.NewCore(
 				zapcore.NewJSONEncoder(encoderConfig),
 				zapcore.AddSync(os.Stdout),
 				zapcore.DebugLevel,
 			),
-		)
+		}
 
-		logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+		if logFile != nil {
+			cores = append(cores, zapcore.NewCore(
+				zapcore.NewJSONEncoder(encoderConfig),
+				zapcore.AddSync(logFile),
+				zapcore.DebugLevel,
+			))
+		}
+
+		logger := zap.New(zapcore.NewTee(cores...), zap.AddCaller(), zap.AddCallerSkip(1))
 		instance = &Logger{Log: logger}
 	})
-
-	if setupErr != nil {
-		return nil, setupErr
-	}
 
 	return instance, setupErr
 }
