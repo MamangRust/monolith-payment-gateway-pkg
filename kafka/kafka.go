@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
@@ -67,10 +68,20 @@ func (k *Kafka) StartConsumers(topics []string, groupID string, handler sarama.C
 	ctx := context.Background()
 
 	go func() {
+		retries := 0
+		maxRetries := 5
 		for {
-			if err := consumerGroup.Consume(ctx, topics, handler); err != nil {
+			err := consumerGroup.Consume(ctx, topics, handler)
+			if err != nil {
 				log.Printf("Error from consumer: %v", err)
+				retries++
+				if retries >= maxRetries {
+					log.Fatalf("Max retries reached for consumer group. Exiting.")
+				}
+				time.Sleep(30 * time.Second)
+				continue
 			}
+			retries = 0
 		}
 	}()
 
