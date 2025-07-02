@@ -3,7 +3,7 @@ package date
 import (
 	"time"
 
-	"golang.org/x/exp/rand"
+	"math/rand"
 )
 
 // GenerateExpireDate generates a random date in the future within the next 5 years as the expiration date.
