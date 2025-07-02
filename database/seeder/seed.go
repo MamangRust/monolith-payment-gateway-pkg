@@ -10,6 +10,7 @@ import (
 	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 )
 
+// Deps is a struct that contains the dependencies for the seeder
 type Deps struct {
 	DB     *db.Queries
 	Hash   hash.HashPassword
@@ -17,6 +18,7 @@ type Deps struct {
 	Logger logger.LoggerInterface
 }
 
+// Seeder is a struct that contains all the seeders
 type Seeder struct {
 	User        *userSeeder
 	Role        *roleSeeder
@@ -29,6 +31,21 @@ type Seeder struct {
 	Transaction *transactionSeeder
 }
 
+// NewSeeder initializes and returns the Seeder.
+//
+// It takes a Deps struct which contains the required dependencies
+// to initialize the Seeder.
+//
+// The returned Seeder contains the following:
+// - User: the user seeder
+// - Role: the role seeder
+// - Saldo: the saldo seeder
+// - Topup: the topup seeder
+// - Withdraw: the withdraw seeder
+// - Transfer: the transfer seeder
+// - Merchant: the merchant seeder
+// - Card: the card seeder
+// - Transaction: the transaction seeder
 func NewSeeder(deps Deps) *Seeder {
 	return &Seeder{
 		User:        NewUserSeeder(deps.DB, deps.Ctx, deps.Hash, deps.Logger),
@@ -43,6 +60,25 @@ func NewSeeder(deps Deps) *Seeder {
 	}
 }
 
+// Run runs all the seeders in sequence with a delay of 30 seconds
+// between each seeder.
+//
+// It calls the Seed method of each seeder in the following order:
+//
+// 1. User
+// 2. Role
+// 3. Card
+// 4. Saldo
+// 5. Topup
+// 6. Withdraw
+// 7. Transfer
+// 8. Merchant
+// 9. Transaction
+//
+// If any of the seeders fail, the function returns an error.
+//
+// Returns:
+// an error if any of the seeders fail, otherwise nil
 func (s *Seeder) Run() error {
 	if err := s.seedWithDelay("users", s.User.Seed); err != nil {
 		return err
@@ -83,6 +119,20 @@ func (s *Seeder) Run() error {
 	return nil
 }
 
+// seedWithDelay is a helper function that seeds the given entity with a delay of 30 seconds.
+//
+// It takes the name of the entity and a seed function as parameters.
+// The seed function is called, and if it returns an error, the function returns an error with a message
+// that includes the name of the entity.
+// After the seed function has been called, the function sleeps for 30 seconds to allow the next seeder
+// to run without interfering with the previous one.
+//
+// Args:
+// entityName - the name of the entity being seeded
+// seedFunc - the seed function to be called
+//
+// Returns:
+// an error if the seed function fails, otherwise nil
 func (s *Seeder) seedWithDelay(entityName string, seedFunc func() error) error {
 	if err := seedFunc(); err != nil {
 		return fmt.Errorf("failed to seed %s: %w", entityName, err)

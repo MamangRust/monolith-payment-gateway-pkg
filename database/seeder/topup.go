@@ -11,12 +11,23 @@ import (
 	"go.uber.org/zap"
 )
 
+// topupSeeder is a struct that represents a seeder for the topups table.
 type topupSeeder struct {
 	db     *db.Queries
 	ctx    context.Context
 	logger logger.LoggerInterface
 }
 
+// NewTopupSeeder creates a new instance of the topupSeeder, which is
+// responsible for populating the topups table with fake data.
+//
+// Args:
+// db: a pointer to the database queries
+// ctx: a context.Context object
+// logger: a logger.LoggerInterface object
+//
+// Returns:
+// a pointer to the topupSeeder struct
 func NewTopupSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInterface) *topupSeeder {
 	return &topupSeeder{
 		db:     db,
@@ -25,6 +36,17 @@ func NewTopupSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInt
 	}
 }
 
+// Seed populates the topups table with fake data.
+//
+// It creates a total of 10 topups, with 5 of them being active and 5 of them being
+// trashed. The topups are seeded with a random card number, topup amount, topup method,
+// and topup time. The status of the topup is randomly set to one of the following:
+// pending, success, or failed.
+//
+// If any errors occur during the seeding process, an error is returned.
+//
+// Returns:
+// an error if any of the topups fail to be created, otherwise nil
 func (r *topupSeeder) Seed() error {
 	totalTopups := 10
 	activeTopups := 5

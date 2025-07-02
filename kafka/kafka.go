@@ -9,12 +9,24 @@ import (
 	"github.com/MamangRust/monolith-payment-gateway-pkg/logger"
 )
 
+// SyncProducer is an interface that represents a Kafka producer.
+type SyncProducer interface {
+	SendMessage(msg *sarama.ProducerMessage) (partition int32, offset int64, err error)
+	Close() error
+}
+
+// Kafka is a struct that represents a Kafka producer.
 type Kafka struct {
 	logger   logger.LoggerInterface
-	producer sarama.SyncProducer
+	producer SyncProducer
 	brokers  []string
 }
 
+// NewKafka initializes a new Kafka struct.
+//
+// It takes a logger and a list of broker addresses as inputs and returns a pointer to the Kafka struct.
+// It creates a new Kafka producer with the given configuration, and logs a message indicating if the connection is successful.
+// If the connection fails, it logs an error message and exits.
 func NewKafka(logger logger.LoggerInterface, brokers []string) *Kafka {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll
@@ -35,10 +47,15 @@ func NewKafka(logger logger.LoggerInterface, brokers []string) *Kafka {
 	}
 }
 
+// GetBrokers returns a list of the Kafka broker addresses that the producer is connected to.
 func (k *Kafka) GetBrokers() []string {
 	return k.brokers
 }
 
+// SendMessage sends a message to the given Kafka topic with the given key and value.
+//
+// It uses the configured SyncProducer to send the message and logs the result of the send operation.
+// If the send operation fails, it returns an error.
 func (k *Kafka) SendMessage(topic string, key string, value []byte) error {
 	msg := &sarama.ProducerMessage{
 		Topic: topic,
@@ -55,6 +72,12 @@ func (k *Kafka) SendMessage(topic string, key string, value []byte) error {
 	return nil
 }
 
+// StartConsumers starts a Kafka consumer group to consume messages from the specified topics.
+//
+// It takes a list of topics, a consumer group ID, and a handler implementing the sarama.ConsumerGroupHandler interface.
+// The method initializes a new Kafka consumer group and begins consuming messages in a background goroutine.
+// If an error occurs during consumption, it retries up to a maximum number of retries with a delay between attempts.
+// Any errors from the consumer group are logged and the function returns an error if the consumer group initialization fails.
 func (k *Kafka) StartConsumers(topics []string, groupID string, handler sarama.ConsumerGroupHandler) error {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true

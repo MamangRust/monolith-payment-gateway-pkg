@@ -11,12 +11,23 @@ import (
 	"go.uber.org/zap"
 )
 
+// transactionSeeder is a struct that represents a seeder for the transactions table.
 type transactionSeeder struct {
 	db     *db.Queries
 	ctx    context.Context
 	logger logger.LoggerInterface
 }
 
+// NewTransactionSeeder creates a new instance of the transactionSeeder, which is
+// responsible for populating the transactions table with fake data.
+//
+// Args:
+// db: a pointer to the database queries
+// ctx: a context.Context object
+// logger: a logger.LoggerInterface object
+//
+// Returns:
+// a pointer to the transactionSeeder struct
 func NewTransactionSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInterface) *transactionSeeder {
 	return &transactionSeeder{
 		db:     db,
@@ -25,6 +36,17 @@ func NewTransactionSeeder(db *db.Queries, ctx context.Context, logger logger.Log
 	}
 }
 
+// Seed populates the transactions table with fake data.
+//
+// It generates a total of 10 transactions, with 5 of them being active and 5 of them being
+// trashed. The transactions are seeded with random payment methods, statuses, and transaction
+// times. The card numbers are randomly selected from the cards table. The merchant IDs are
+// randomly selected from the merchants table.
+//
+// If any of the transactions fail to be created, the function returns an error.
+//
+// Returns:
+// an error if any of the transactions fail to be created, otherwise nil
 func (r *transactionSeeder) Seed() error {
 	total := 10
 	active := 5

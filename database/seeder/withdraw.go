@@ -11,12 +11,23 @@ import (
 	"go.uber.org/zap"
 )
 
+// withdrawSeeder is a struct that represents a seeder for the withdraws table.
 type withdrawSeeder struct {
 	db     *db.Queries
 	ctx    context.Context
 	logger logger.LoggerInterface
 }
 
+// NewWithdrawSeeder creates a new instance of the withdrawSeeder, which is
+// responsible for populating the withdraws table with fake data.
+//
+// Args:
+// db: a pointer to the database queries
+// ctx: a context.Context object
+// logger: a logger.LoggerInterface object
+//
+// Returns:
+// a pointer to the withdrawSeeder struct
 func NewWithdrawSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInterface) *withdrawSeeder {
 	return &withdrawSeeder{
 		db:     db,
@@ -25,6 +36,18 @@ func NewWithdrawSeeder(db *db.Queries, ctx context.Context, logger logger.Logger
 	}
 }
 
+// Seed populates the withdraws table with fake data.
+//
+// It generates a total of 10 withdraws, with 5 of them being active and 5 of them being
+// trashed. The withdraws are seeded with random card numbers, withdraw amounts, and
+// withdraw times. The status of each withdraw is randomly set to one of the following:
+// pending, success, or failed. The card numbers are randomly selected from the cards
+// table.
+//
+// If any errors occur during the seeding process, an error is returned.
+//
+// Returns:
+// an error if any of the withdraws fail to be created or updated, otherwise nil
 func (r *withdrawSeeder) Seed() error {
 	total := 10
 	active := 5

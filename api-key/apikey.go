@@ -5,11 +5,13 @@ import (
 	"encoding/hex"
 )
 
-func GenerateApiKey() string {
+// GenerateApiKey returns a random API key represented as a 64-character
+// hexadecimal string.
+func GenerateApiKey() (string, error) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return hex.EncodeToString(key)
+	return hex.EncodeToString(key), nil
 }

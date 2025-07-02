@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// userSeeder is a struct that represents a seeder for the users table.
 type userSeeder struct {
 	db     *db.Queries
 	hash   hash.HashPassword
@@ -20,6 +21,17 @@ type userSeeder struct {
 	logger logger.LoggerInterface
 }
 
+// NewUserSeeder creates a new instance of the userSeeder, which is
+// responsible for populating the users table with fake data.
+//
+// Args:
+// db: a pointer to the database queries
+// ctx: a context.Context object
+// hash: a hash.HashPassword object
+// logger: a logger.LoggerInterface object
+//
+// Returns:
+// a pointer to the userSeeder struct
 func NewUserSeeder(db *db.Queries, ctx context.Context, hash hash.HashPassword, logger logger.LoggerInterface) *userSeeder {
 	return &userSeeder{
 		db:     db,
@@ -29,6 +41,18 @@ func NewUserSeeder(db *db.Queries, ctx context.Context, hash hash.HashPassword, 
 	}
 }
 
+// Seed populates the users table with fake data.
+//
+// It creates a total of 15 users, with 10 of them being active and 5 of them being
+// trashed. The active users have a status of "active", while the trashed users have a
+// status of "deactive". The user names are generated randomly from the combination of
+// the adjectives and nouns provided. The API key is generated using the GenerateApiKey
+// function from the api-key package.
+//
+// If any errors occur during the seeding process, an error is returned.
+//
+// Returns:
+// an error if any of the users fail to be created, otherwise nil
 func (r *userSeeder) Seed() error {
 	totalUsers := 15
 	activeUsers := 10

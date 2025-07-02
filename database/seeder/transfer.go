@@ -11,12 +11,23 @@ import (
 	"go.uber.org/zap"
 )
 
+// transferSeeder is a struct that represents a seeder for the transfers table.
 type transferSeeder struct {
 	db     *db.Queries
 	ctx    context.Context
 	logger logger.LoggerInterface
 }
 
+// NewTransferSeeder creates a new instance of the transferSeeder, which is
+// responsible for populating the transfers table with fake data.
+//
+// Args:
+// db: a pointer to the database queries
+// ctx: a context.Context object
+// logger: a logger.LoggerInterface object
+//
+// Returns:
+// a pointer to the transferSeeder struct
 func NewTransferSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInterface) *transferSeeder {
 	return &transferSeeder{
 		db:     db,
@@ -25,6 +36,18 @@ func NewTransferSeeder(db *db.Queries, ctx context.Context, logger logger.Logger
 	}
 }
 
+// Seed populates the transfers table with fake data.
+//
+// It creates a total of 10 transfers, with 5 of them being active and 5 of them being
+// trashed. The active transfers have a status of "pending", "success", or "failed", while
+// the trashed transfers have a status of "trashed". The transfers are seeded with random
+// transfer from and to, transfer time, and transfer amount. The transfer time is randomly
+// selected from the first day of each month of the current year.
+//
+// If any of the transfers fail to be created, the function returns an error.
+//
+// Returns:
+// an error if any of the transfers fail to be created, otherwise nil
 func (r *transferSeeder) Seed() error {
 	total := 10
 	active := 5

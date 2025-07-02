@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// ErrTokenExpired is an error that is returned when a JWT token is expired.
 var ErrTokenExpired = errors.New("token expired")
 
 //go:generate mockgen -source=token.go -destination=mocks/token.go
@@ -21,6 +22,10 @@ type Manager struct {
 	secretKey []byte
 }
 
+// NewManager creates a new Manager instance with the given secret key.
+//
+// The secret key is expected to be a non-empty string. If the secret key is
+// empty, an error is returned.
 func NewManager(secretKey string) (*Manager, error) {
 	if secretKey == "" {
 		return nil, errors.New("empty secret key")
@@ -28,6 +33,14 @@ func NewManager(secretKey string) (*Manager, error) {
 	return &Manager{secretKey: []byte(secretKey)}, nil
 }
 
+// GenerateToken generates a new JWT token for the given user ID and audience.
+//
+// The token is valid for 12 hours from the time it is generated.
+// The subject claim is set to the given user ID.
+// The audience claim is set to the given audience.
+// The token is signed with the secret key set on the Manager during initialization.
+//
+// If the token cannot be generated, an error is returned.
 func (m *Manager) GenerateToken(userId int, audience string) (string, error) {
 	nowTime := time.Now()
 	expireTime := nowTime.Add(12 * time.Hour)
@@ -41,6 +54,10 @@ func (m *Manager) GenerateToken(userId int, audience string) (string, error) {
 	return token.SignedString([]byte(m.secretKey))
 }
 
+// ValidateToken validates a JWT token and returns the user ID string if the validation is successful.
+// If the token is invalid or expired, an error is returned.
+// The error is wrapped with jwt.ErrTokenExpired if the token is expired.
+// The error is wrapped with jwt.ErrTokenExpired if the token is expired.
 func (m *Manager) ValidateToken(accessToken string) (string, error) {
 	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (i interface{}, err error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -63,5 +80,4 @@ func (m *Manager) ValidateToken(accessToken string) (string, error) {
 	}
 
 	return claims["sub"].(string), nil
-
 }

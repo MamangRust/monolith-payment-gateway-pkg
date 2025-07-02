@@ -6,6 +6,8 @@ import (
 	"golang.org/x/exp/rand"
 )
 
+// GenerateExpireDate generates a random date in the future within the next 5 years as the expiration date.
+// The date is in the format "YYYY-MM-DD", and the time is midnight UTC.
 func GenerateExpireDate() time.Time {
 	now := time.Now()
 	year := now.Year() + rand.Intn(5)

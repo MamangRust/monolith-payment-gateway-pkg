@@ -11,12 +11,23 @@ import (
 	"go.uber.org/zap"
 )
 
+// saldoSeeder is a struct that represents a seeder for the saldos table.
 type saldoSeeder struct {
 	db     *db.Queries
 	ctx    context.Context
 	logger logger.LoggerInterface
 }
 
+// NewSaldoSeeder creates a new instance of the saldoSeeder, which is
+// responsible for populating the saldos table with fake data.
+//
+// Args:
+// db: a pointer to the database queries
+// ctx: a context.Context object
+// logger: a logger.LoggerInterface object
+//
+// Returns:
+// a pointer to the saldoSeeder struct
 func NewSaldoSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInterface) *saldoSeeder {
 	return &saldoSeeder{
 		db:     db,
@@ -25,6 +36,16 @@ func NewSaldoSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInt
 	}
 }
 
+// Seed populates the saldos table with fake data.
+//
+// It generates 10 saldos, 5 of which are active and 5 of which are trashed.
+// The saldos are seeded with random totalBalance values, and the cardNumber
+// is randomly selected from the cards table.
+//
+// If any errors occur during the seeding process, an error is returned.
+//
+// Returns:
+// an error if any of the saldos fail to be created, otherwise nil
 func (r *saldoSeeder) Seed() error {
 	totalSaldos := 10
 	activeSaldos := 5

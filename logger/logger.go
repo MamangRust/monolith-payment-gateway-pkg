@@ -26,6 +26,21 @@ type Logger struct {
 var once sync.Once
 var instance LoggerInterface
 
+// NewLogger returns a singleton instance of LoggerInterface with a logger that writes
+// JSON-formatted log messages to both stdout and a log file. The log file name is
+// determined by the service parameter. If the service parameter is empty, the log file
+// name will be "app.log". The logger will be configured to write logs in the
+// following locations:
+//
+//   - stdout, if the APP_ENV environment variable is not set
+//   - /var/log/app/<service>.log, if the APP_ENV environment variable is set to
+//     "docker", "production", or "kubernetes"
+//   - ./logs/<service>.log, otherwise
+//
+// The logger will fallback to stdout only if it fails to create the log directory or
+// open the log file.
+//
+// The logger will use the DebugLevel by default.
 func NewLogger(service string) (LoggerInterface, error) {
 	var setupErr error
 
@@ -95,18 +110,27 @@ func NewLogger(service string) (LoggerInterface, error) {
 	return instance, setupErr
 }
 
+// Info logs a message at the Info level. It accepts a message string
+// and optional zap fields to include additional context in the log entry.
 func (l *Logger) Info(message string, fields ...zap.Field) {
 	l.Log.Info(message, fields...)
 }
 
+// Fatal logs a message at the Fatal level. It accepts a message string
+// and optional zap fields to include additional context in the log entry.
+// The function will log the message and then terminate the application.
 func (l *Logger) Fatal(message string, fields ...zap.Field) {
 	l.Log.Fatal(message, fields...)
 }
 
+// Debug logs a message at the Debug level. It accepts a message string
+// and optional zap fields to include additional context in the log entry.
 func (l *Logger) Debug(message string, fields ...zap.Field) {
 	l.Log.Debug(message, fields...)
 }
 
+// Error logs a message at the Error level. It accepts a message string
+// and optional zap fields to include additional context in the log entry.
 func (l *Logger) Error(message string, fields ...zap.Field) {
 	l.Log.Error(message, fields...)
 }

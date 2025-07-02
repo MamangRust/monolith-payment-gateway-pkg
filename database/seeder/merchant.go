@@ -10,12 +10,23 @@ import (
 	"go.uber.org/zap"
 )
 
+// merchantSeeder is a struct that represents a seeder for the merchants table.
 type merchantSeeder struct {
 	db     *db.Queries
 	ctx    context.Context
 	logger logger.LoggerInterface
 }
 
+// NewMerchantSeeder creates a new instance of the merchantSeeder, which is
+// responsible for populating the merchants table with fake data.
+//
+// Args:
+// db: a pointer to the database queries
+// ctx: a context.Context object
+// logger: a logger.LoggerInterface object
+//
+// Returns:
+// a pointer to the merchantSeeder struct
 func NewMerchantSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInterface) *merchantSeeder {
 	return &merchantSeeder{
 		db:     db,
@@ -24,6 +35,13 @@ func NewMerchantSeeder(db *db.Queries, ctx context.Context, logger logger.Logger
 	}
 }
 
+// Seed populates the merchants table with fake data.
+//
+// It creates a total of 10 merchants, with 5 of them being active and 5 of them being
+// trashed. The active merchants have a status of "active", while the trashed merchants
+// have a status of "deactive". The merchant names are generated randomly from the
+// combination of the adjectives and nouns provided. The API key is generated using
+// the GenerateApiKey function from the api-key package.
 func (r *merchantSeeder) Seed() error {
 	adjectives := []string{"Blue", "Green", "Red", "Yellow", "Fast"}
 	nouns := []string{"Shop", "Store", "Mart", "Market", "Hub"}
@@ -37,7 +55,7 @@ func (r *merchantSeeder) Seed() error {
 		noun := nouns[i%len(nouns)]
 		merchantName := fmt.Sprintf("%s %s", adjective, noun)
 
-		apiKey := apikey.GenerateApiKey()
+		apiKey, _ := apikey.GenerateApiKey()
 
 		req := db.CreateMerchantParams{
 			Name:   merchantName,

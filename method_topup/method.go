@@ -2,6 +2,10 @@ package methodtopup
 
 import "strings"
 
+// PaymentMethodValidator will validate the payment method string with list of known payment methods.
+//
+// It will check if the given paymentMethod is in the list of known payment methods.
+// If the payment method is in the list, it will return true, otherwise it will return false.
 func PaymentMethodValidator(paymentMethod string) bool {
 	paymentRules := []string{
 		"alfamart",

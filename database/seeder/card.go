@@ -11,12 +11,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// cardSeeder is a struct that represents a seeder for the cards table.
 type cardSeeder struct {
 	db     *db.Queries
 	ctx    context.Context
 	logger logger.LoggerInterface
 }
 
+// NewCardSeeder creates a new instance of the cardSeeder, which is
+// responsible for populating the cards table with fake data.
 func NewCardSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInterface) *cardSeeder {
 	return &cardSeeder{
 		db:     db,
@@ -25,6 +28,13 @@ func NewCardSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInte
 	}
 }
 
+// Seed populates the cards table with fake data.
+//
+// It generates 10 cards, 5 of which are active and 5 of which are trashed.
+// The cards are seeded with random card numbers, card types, expire dates, and
+// CVV numbers. The card provider is randomly selected from a list of providers.
+//
+// If any errors occur during the seeding process, an error is returned.
 func (r *cardSeeder) Seed() error {
 	cardTypes := []string{"credit", "debit"}
 	cardProviders := []string{"mandiri", "bni", "bri"}
