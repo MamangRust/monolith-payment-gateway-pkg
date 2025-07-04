@@ -17,6 +17,7 @@ import (
 // - docker: /app/docker.env
 // - production: /app/production.env
 // - kubernetes: no configuration file is read
+// - test: no configuration file is read
 //
 // If an error occurs while reading the configuration file, an error is
 // returned.
@@ -34,7 +35,7 @@ func Viper() error {
 		configFile = "/app/docker.env"
 	case "production":
 		configFile = "/app/production.env"
-	case "kubernetes":
+	case "kubernetes", "test":
 		useConfigFile = false
 	default:
 		configFile = ".env"
