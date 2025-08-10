@@ -80,11 +80,11 @@ func NewSeeder(deps Deps) *Seeder {
 // Returns:
 // an error if any of the seeders fail, otherwise nil
 func (s *Seeder) Run() error {
-	if err := s.seedWithDelay("users", s.User.Seed); err != nil {
+	if err := s.seedWithDelay("roles", s.Role.Seed); err != nil {
 		return err
 	}
 
-	if err := s.seedWithDelay("roles", s.Role.Seed); err != nil {
+	if err := s.seedWithDelay("users", s.User.Seed); err != nil {
 		return err
 	}
 
