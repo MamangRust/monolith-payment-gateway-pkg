@@ -48,9 +48,9 @@ func NewTransactionSeeder(db *db.Queries, ctx context.Context, logger logger.Log
 // Returns:
 // an error if any of the transactions fail to be created, otherwise nil
 func (r *transactionSeeder) Seed() error {
-	total := 10
-	active := 5
-	trashed := 5
+	total := 5
+	active := 3
+	trashed := 2
 
 	paymentMethods := []string{"Bank Alpha", "Bank Beta", "Bank Gamma"}
 	statusOptions := []string{"pending", "success", "failed"}

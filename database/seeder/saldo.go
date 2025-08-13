@@ -47,9 +47,9 @@ func NewSaldoSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInt
 // Returns:
 // an error if any of the saldos fail to be created, otherwise nil
 func (r *saldoSeeder) Seed() error {
-	totalSaldos := 10
-	activeSaldos := 5
-	trashedSaldos := 5
+	totalSaldos := 5
+	activeSaldos := 3
+	trashedSaldos := 2
 
 	var cards []db.Card
 	for i := 1; i <= totalSaldos; i++ {

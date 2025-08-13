@@ -49,9 +49,9 @@ func NewTransferSeeder(db *db.Queries, ctx context.Context, logger logger.Logger
 // Returns:
 // an error if any of the transfers fail to be created, otherwise nil
 func (r *transferSeeder) Seed() error {
-	total := 10
-	active := 5
-	trashed := total - active
+	total := 5
+	active := 3
+	trashed := 2
 
 	var cards []db.Card
 	for i := 1; i <= total; i++ {

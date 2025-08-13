@@ -48,9 +48,9 @@ func NewTopupSeeder(db *db.Queries, ctx context.Context, logger logger.LoggerInt
 // Returns:
 // an error if any of the topups fail to be created, otherwise nil
 func (r *topupSeeder) Seed() error {
-	totalTopups := 10
-	activeTopups := 5
-	trashedTopups := 5
+	totalTopups := 5
+	activeTopups := 3
+	trashedTopups := 2
 
 	var cards []db.Card
 

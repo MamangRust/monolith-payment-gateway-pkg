@@ -65,8 +65,8 @@ func NewSeeder(deps Deps) *Seeder {
 //
 // It calls the Seed method of each seeder in the following order:
 //
-// 1. User
-// 2. Role
+// 1. Role
+// 2. User
 // 3. Card
 // 4. Saldo
 // 5. Topup
@@ -138,6 +138,6 @@ func (s *Seeder) seedWithDelay(entityName string, seedFunc func() error) error {
 		return fmt.Errorf("failed to seed %s: %w", entityName, err)
 	}
 
-	time.Sleep(30 * time.Second)
+	time.Sleep(25 * time.Second)
 	return nil
 }

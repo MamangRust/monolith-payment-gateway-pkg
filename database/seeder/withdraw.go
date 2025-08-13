@@ -49,9 +49,9 @@ func NewWithdrawSeeder(db *db.Queries, ctx context.Context, logger logger.Logger
 // Returns:
 // an error if any of the withdraws fail to be created or updated, otherwise nil
 func (r *withdrawSeeder) Seed() error {
-	total := 10
-	active := 5
-	trashed := total - active
+	total := 5
+	active := 3
+	trashed := 2
 
 	var cards []db.Card
 	for i := 1; i <= total; i++ {
